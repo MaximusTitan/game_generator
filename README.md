@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Game Genie
 
-## Getting Started
+Type an idea ("a jungle race with three cars") and Game Genie builds a playable game: a **quiz**, a **race**, a **catcher** or a **memory match**. Players can then tweak it by chatting ("make it faster"), save it, and share it with a link or QR code.
 
-First, run the development server:
+Built with Next.js 16, React 19, Tailwind CSS 4, Phaser 4, Supabase (auth + Postgres) and the Vercel AI Gateway (via the AI SDK).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## How it works
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The AI never writes code. It fills in a typed game spec (`lib/games/spec.ts`) using structured output, and a fixed engine renders it:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Type   | Engine                                   |
+| ------ | ---------------------------------------- |
+| race   | Phaser scene, `components/games/race-scene.ts`  |
+| catch  | Phaser scene, `components/games/catch-scene.ts` |
+| quiz   | React, `components/games/quiz-game.tsx`         |
+| memory | React, `components/games/memory-game.tsx`       |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Editing with chat sends the current spec plus the request to `/api/edit`, which returns an updated spec. Every edit is a new version you can undo or redo before saving.
 
-## Learn More
+## Setup
 
-To learn more about Next.js, take a look at the following resources:
+1. Create a Supabase project, open the SQL editor and run `supabase/migrations/0001_games.sql`.
+2. Create an AI Gateway API key at https://vercel.com/ai-gateway.
+3. Copy `.env.example` to `.env.local` and fill in the values:
+   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or the legacy anon key as `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+   - `SUPABASE_SECRET_KEY` (or the legacy service role key as `SUPABASE_SERVICE_ROLE_KEY`). Server only.
+   - `AI_GATEWAY_API_KEY`, and optionally `AI_GATEWAY_MODEL` (defaults to `anthropic/claude-sonnet-5.5`)
+4. `pnpm install` then `pnpm dev`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Sign up without email verification
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`/api/auth/signup` creates users with the Supabase admin API and `email_confirm: true`, so accounts are verified straight away and the browser signs in immediately. No confirmation email is sent, whatever the "Confirm email" setting in Supabase is.
 
-## Deploy on Vercel
+## Routes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `/` prompt screen · `/create` customize and generate · `/games/[id]` play and edit with chat (owner only)
+- `/play/[id]` public player for shared games (anyone with the link) · `/my-games` your games, share link, QR, remix
+- `/login`, `/signup`
