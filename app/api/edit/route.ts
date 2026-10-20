@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { editGame } from "@/lib/ai/game-ai";
-import { gameSpec, type GameSpec } from "@/lib/games/spec";
+import { gameSpec, withLearningDefaults, type GameSpec } from "@/lib/games/spec";
 import { createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 120;
 
 const body = z.object({
-  spec: gameSpec,
+  spec: z.preprocess(withLearningDefaults, gameSpec),
   instruction: z.string().trim().min(1).max(500),
   history: z
     .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(2000) }))

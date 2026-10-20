@@ -1,6 +1,6 @@
 # Game Gen
 
-Type an idea ("a jungle race with three cars") and Game Gen builds a playable game: a **quiz**, a **race**, a **catcher** or a **memory match**. Players can then tweak it by chatting ("make it faster"), save it, and share it with a link or QR code.
+Pick a subject, type an idea ("a jungle race through the times tables") and Game Gen builds a playable learning game: a **quiz**, a **race**, a **catcher** or a **memory match**. Players can then tweak it by chatting ("make it faster"), save it, and share it with a link or QR code.
 
 Built with Next.js 16, React 19, Tailwind CSS 4, Phaser 4, Supabase (auth + Postgres) and the Vercel AI Gateway (via the AI SDK).
 
@@ -14,6 +14,8 @@ The AI never writes code. It fills in a typed game spec (`lib/games/spec.ts`) us
 | catch  | Phaser scene, `components/games/catch-scene.ts` |
 | quiz   | React, `components/games/quiz-game.tsx`         |
 | memory | React, `components/games/memory-game.tsx`       |
+
+Game Gen only makes educational games. Players pick a subject and an age group, and `/api/generate` first runs `checkIdea()`: ideas with nothing to learn (or anything unsafe) are rejected with a suggested learning version the player can use in one tap. Each spec has a `subject`, a `learningGoal` and a few `facts` (shown as "Did you know?" at the end), and every engine's scoring comes from knowledge: quiz explanations, race answer gates you steer through, a catch sorting `rule` ("Catch even numbers!") and memory pairs that connect two different things. Chat edits can change the topic or difficulty but can't remove the learning. Games saved before this get defaults via `withLearningDefaults()`.
 
 Editing with chat sends the current spec plus the request to `/api/edit`, which returns an updated spec. Every edit is a new version you can undo or redo before saving.
 

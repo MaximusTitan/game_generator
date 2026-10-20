@@ -4,12 +4,17 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
+  AGE_GROUPS,
   DIFFICULTIES,
   GAME_TYPES,
   GAME_TYPE_INFO,
+  SUBJECTS,
+  SUBJECT_INFO,
   THEMES,
+  type AgeGroup,
   type CustomizeOptions,
   type GameType,
+  type Subject,
 } from "@/lib/games/spec";
 import { PALETTES } from "@/lib/games/themes";
 import { Generating } from "./generating";
@@ -22,9 +27,13 @@ export function CustomizeGame() {
   const router = useRouter();
   const prompt = params.get("prompt") ?? "";
   const typeParam = params.get("type");
+  const subjectParam = params.get("subject");
+  const ageParam = params.get("age");
 
   const [options, setOptions] = useState<CustomizeOptions>({
     prompt,
+    subject: SUBJECTS.includes(subjectParam as Subject) ? (subjectParam as Subject) : null,
+    age: AGE_GROUPS.includes(ageParam as AgeGroup) ? (ageParam as AgeGroup) : "7-9",
     type: GAME_TYPES.includes(typeParam as GameType) ? (typeParam as GameType) : null,
     theme: "surprise",
     difficulty: "medium",
@@ -37,6 +46,7 @@ export function CustomizeGame() {
   const [customHero, setCustomHero] = useState("");
   const [phase, setPhase] = useState<"edit" | "generating">("edit");
   const [error, setError] = useState<string | null>(null);
+  const [suggestion, setSuggestion] = useState<string | null>(null);
   const [doneId, setDoneId] = useState<string | null>(null);
 
   const set = <K extends keyof CustomizeOptions>(key: K, value: CustomizeOptions[K]) =>
@@ -45,6 +55,7 @@ export function CustomizeGame() {
   async function generate() {
     setPhase("generating");
     setError(null);
+    setSuggestion(null);
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -53,6 +64,11 @@ export function CustomizeGame() {
       });
       const data = await res.json().catch(() => null);
       if (res.status === 401) return router.push(`/login?next=${encodeURIComponent(`/create?${params}`)}`);
+      if (res.status === 422) {
+        setError(data?.error ?? "Game Gen only makes learning games.");
+        setSuggestion(data?.suggestion ?? null);
+        return setPhase("edit");
+      }
       if (!res.ok || !data?.id) throw new Error(data?.error ?? "Something went wrong.");
       setDoneId(data.id);
       setTimeout(() => router.push(`/games/${data.id}`), 700);
@@ -65,15 +81,24 @@ export function CustomizeGame() {
   if (!prompt) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 p-10 text-center">
-        <p className="hand text-2xl">First, tell Game Gen your game idea!</p>
+        <p className="hand text-2xl">First, tell Game Gen what you want to learn!</p>
         <Link href="/" className="btn btn-primary">
-          ← Describe a game
+          ← Pick a subject
         </Link>
       </div>
     );
   }
 
   if (phase === "generating") return <Generating done={Boolean(doneId)} />;
+
+  function applySuggestion(text: string) {
+    const next = new URLSearchParams(params);
+    next.set("prompt", text);
+    router.replace(`/create?${next}`);
+    set("prompt", text);
+    setSuggestion(null);
+    setError(null);
+  }
 
   const previewTheme = options.theme === "surprise" ? null : PALETTES[options.theme];
 
@@ -84,7 +109,7 @@ export function CustomizeGame() {
           <div>
             <h1 className="hand text-4xl">Make it yours</h1>
             <p className="mt-1 text-muted">
-              Your idea: <span className="hand text-lg text-ink">“{prompt}”</span>
+              Your idea: <span className="hand text-lg text-ink">“{options.prompt}”</span>
             </p>
           </div>
           <Link href="/" className="hand shrink-0 text-lg text-muted hover:text-brand">
@@ -92,7 +117,23 @@ export function CustomizeGame() {
           </Link>
         </div>
 
-        <Section title="Game type">
+        <Section title="Subject">
+          {SUBJECTS.map((s) => (
+            <Chip key={s} pressed={options.subject === s} onClick={() => set("subject", s)}>
+              {SUBJECT_INFO[s].icon} {SUBJECT_INFO[s].label}
+            </Chip>
+          ))}
+        </Section>
+
+        <Section title="Age group">
+          {AGE_GROUPS.map((a) => (
+            <Chip key={a} pressed={options.age === a} onClick={() => set("age", a)}>
+              Ages {a}
+            </Chip>
+          ))}
+        </Section>
+
+        <Section title="Game style">
           <Chip pressed={options.type === null} onClick={() => set("type", null)}>
             🎲 Auto pick
           </Chip>
@@ -207,6 +248,10 @@ export function CustomizeGame() {
             <span className="bob text-6xl">{options.hero || "❔"}</span>
           </div>
           <ul className="mt-3 space-y-0.5 text-sm text-muted">
+            <li className="font-semibold text-ink">
+              {options.subject ? `${SUBJECT_INFO[options.subject].icon} ${SUBJECT_INFO[options.subject].label}` : "🎓 Pick a subject"} · Ages{" "}
+              {options.age}
+            </li>
             <li>
               {options.type ? `${GAME_TYPE_INFO[options.type].icon} ${GAME_TYPE_INFO[options.type].label}` : "🎲 Game Gen picks the game type"}
             </li>
@@ -223,12 +268,22 @@ export function CustomizeGame() {
           </ul>
         </div>
         {error && (
-          <p role="alert" className="rounded-lg border-2 border-heart bg-red-50 px-3 py-2 text-sm text-red-700">
-            {error}
-          </p>
+          <div role="alert" className="rounded-lg border-2 border-heart bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p>{error}</p>
+            {suggestion && (
+              <div className="mt-2 flex flex-col gap-2 text-ink">
+                <p>
+                  Try this instead: <span className="hand text-lg">“{suggestion}”</span>
+                </p>
+                <button type="button" onClick={() => applySuggestion(suggestion)} className="btn btn-sun self-start !py-1 !text-base">
+                  🎓 Use this idea
+                </button>
+              </div>
+            )}
+          </div>
         )}
-        <button onClick={generate} className="btn btn-primary w-full !py-3 !text-2xl">
-          Generate game ✨
+        <button onClick={generate} disabled={!options.subject} className="btn btn-primary w-full !py-3 !text-2xl">
+          Generate learning game 🎓
         </button>
       </aside>
     </div>

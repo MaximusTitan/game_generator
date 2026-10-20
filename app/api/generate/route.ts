@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { generateGame, pickGameType } from "@/lib/ai/game-ai";
-import { DIFFICULTIES, GAME_TYPES, THEMES } from "@/lib/games/spec";
+import { checkIdea, generateGame } from "@/lib/ai/game-ai";
+import { AGE_GROUPS, DIFFICULTIES, GAME_TYPES, SUBJECTS, THEMES } from "@/lib/games/spec";
 import { createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 120;
 
 const body = z.object({
   prompt: z.string().trim().min(3, "Describe your game in a few words").max(500),
+  subject: z.enum(SUBJECTS, "Pick a subject to learn"),
+  age: z.enum(AGE_GROUPS),
   type: z.enum(GAME_TYPES).nullable(),
   theme: z.enum([...THEMES, "surprise"]),
   difficulty: z.enum(DIFFICULTIES),
@@ -32,8 +34,19 @@ export async function POST(request: Request) {
   const options = parsed.data;
 
   try {
-    const type = options.type ?? (await pickGameType(options.prompt));
-    const spec = await generateGame({ ...options, type });
+    // Only learning games get made: the idea must teach something in the chosen subject.
+    const idea = await checkIdea(options);
+    if (!idea.educational) {
+      return NextResponse.json(
+        {
+          error: "Game Gen only makes learning games. Tell it what players should learn or practise.",
+          suggestion: idea.suggestion || null,
+        },
+        { status: 422 },
+      );
+    }
+    const type = idea.type;
+    const spec = await generateGame({ ...options, type, learningGoal: idea.learningGoal });
 
     const { data, error } = await supabase
       .from("games")

@@ -2,15 +2,26 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { GAME_TYPES, GAME_TYPE_INFO, type GameType } from "@/lib/games/spec";
+import {
+  AGE_GROUPS,
+  GAME_TYPES,
+  GAME_TYPE_INFO,
+  SUBJECTS,
+  SUBJECT_INFO,
+  type AgeGroup,
+  type GameType,
+  type Subject,
+} from "@/lib/games/spec";
 
-const IDEAS: Array<{ icon: string; text: string; type: GameType }> = [
-  { icon: "🌠", text: "Catch the falling stars and dodge space rocks", type: "catch" },
-  { icon: "🏎️", text: "A jungle race with three cars", type: "race" },
-  { icon: "🐉", text: "Dragon maths quiz for 8 year olds", type: "quiz" },
-  { icon: "🍎", text: "Match the fruit pairs", type: "memory" },
-  { icon: "🌍", text: "Capital cities of Europe quiz", type: "quiz" },
-  { icon: "🥐", text: "Match French words to English", type: "memory" },
+type Idea = { icon: string; text: string; type: GameType; subject: Subject; age: AgeGroup };
+
+const IDEAS: Idea[] = [
+  { icon: "🔢", text: "Catch the even numbers, dodge the odd ones", type: "catch", subject: "maths", age: "7-9" },
+  { icon: "🏎️", text: "Jungle race through the times tables", type: "race", subject: "maths", age: "7-9" },
+  { icon: "🪐", text: "Space quiz on the planets of the solar system", type: "quiz", subject: "space", age: "7-9" },
+  { icon: "🐾", text: "Match animals to their habitats", type: "memory", subject: "nature", age: "4-6" },
+  { icon: "🌍", text: "Capital cities of Europe quiz", type: "quiz", subject: "geography", age: "10-12" },
+  { icon: "🥐", text: "Match French words to English", type: "memory", subject: "languages", age: "10-12" },
 ];
 
 type Recognition = {
@@ -26,6 +37,8 @@ export function PromptForm() {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [type, setType] = useState<GameType | null>(null);
+  const [subject, setSubject] = useState<Subject | null>(null);
+  const [age, setAge] = useState<AgeGroup>("7-9");
   const [listening, setListening] = useState(false);
   const [canListen, setCanListen] = useState(false);
   const recognition = useRef<Recognition | null>(null);
@@ -51,10 +64,12 @@ export function PromptForm() {
     r.start();
   }
 
-  function submit(text = prompt, chosen = type) {
+  const ready = prompt.trim().length >= 3 && subject !== null;
+
+  function submit(text = prompt, chosen = type, chosenSubject = subject, chosenAge = age) {
     const trimmed = text.trim();
-    if (trimmed.length < 3) return;
-    const params = new URLSearchParams({ prompt: trimmed });
+    if (trimmed.length < 3 || !chosenSubject) return;
+    const params = new URLSearchParams({ prompt: trimmed, subject: chosenSubject, age: chosenAge });
     if (chosen) params.set("type", chosen);
     router.push(`/create?${params}`);
   }
@@ -67,6 +82,37 @@ export function PromptForm() {
         submit();
       }}
     >
+      <div>
+        <p className="hand mb-2 text-lg">
+          1. What do you want to learn? <span className="text-sm text-muted">(pick a subject)</span>
+        </p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+          {SUBJECTS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              aria-pressed={subject === s}
+              onClick={() => setSubject(subject === s ? null : s)}
+              className="chip !justify-start text-sm"
+            >
+              <span aria-hidden>{SUBJECT_INFO[s].icon}</span> {SUBJECT_INFO[s].label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="hand mb-2 text-lg">2. Who is it for?</p>
+        <div className="flex flex-wrap gap-2">
+          {AGE_GROUPS.map((a) => (
+            <button key={a} type="button" aria-pressed={age === a} onClick={() => setAge(a)} className="chip min-w-24">
+              Ages {a}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <p className="hand -mb-4 text-lg">3. Describe the game and the topic</p>
       <div className="relative rounded-2xl border-2 border-brand bg-card p-1 shadow-[3px_3px_0_var(--brand)] focus-within:ring-4 focus-within:ring-brand-soft">
         <textarea
           value={prompt}
@@ -79,8 +125,8 @@ export function PromptForm() {
           }}
           rows={3}
           maxLength={500}
-          aria-label="Describe your game"
-          placeholder="A space game where I catch falling stars and dodge rocks…"
+          aria-label="Describe your learning game"
+          placeholder={`${subject ? SUBJECT_INFO[subject].example : "A dragon quiz on the 7 times table"}…`}
           className="hand w-full resize-none bg-transparent px-4 py-3 pr-16 text-xl outline-none placeholder:text-muted/70"
         />
         {canListen && (
@@ -96,7 +142,7 @@ export function PromptForm() {
       </div>
 
       <div>
-        <p className="hand mb-2 text-lg">Game type <span className="text-sm text-muted">(or let Game Gen pick)</span></p>
+        <p className="hand mb-2 text-lg">Game style <span className="text-sm text-muted">(or let Game Gen pick)</span></p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {GAME_TYPES.map((t) => (
             <button
@@ -113,9 +159,12 @@ export function PromptForm() {
         </div>
       </div>
 
-      <button type="submit" disabled={prompt.trim().length < 3} className="btn btn-primary mx-auto !px-10 !py-3 !text-2xl">
-        ✨ Make my game
-      </button>
+      <div className="flex flex-col items-center gap-1">
+        <button type="submit" disabled={!ready} className="btn btn-primary !px-10 !py-3 !text-2xl">
+          🎓 Make my learning game
+        </button>
+        {!subject && prompt.trim().length >= 3 && <p className="text-sm text-muted">Pick a subject first ☝️</p>}
+      </div>
 
       <div>
         <p className="hand mb-2 text-lg">Need ideas? Tap one!</p>
@@ -124,13 +173,18 @@ export function PromptForm() {
             <button
               key={idea.text}
               type="button"
-              onClick={() => submit(idea.text, idea.type)}
+              onClick={() => submit(idea.text, idea.type, idea.subject, idea.age)}
               className="sketch flex items-center gap-3 !bg-sun px-3 py-3 text-left transition-transform hover:-translate-y-0.5"
             >
               <span className="text-3xl" aria-hidden>
                 {idea.icon}
               </span>
-              <span className="hand text-lg leading-tight">{idea.text}</span>
+              <span className="flex flex-col">
+                <span className="hand text-lg leading-tight">{idea.text}</span>
+                <span className="text-xs text-muted">
+                  {SUBJECT_INFO[idea.subject].label} · Ages {idea.age}
+                </span>
+              </span>
             </button>
           ))}
         </div>

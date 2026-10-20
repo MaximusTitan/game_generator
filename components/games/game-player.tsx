@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import type { CatchSpec, GameSpec, RaceSpec } from "@/lib/games/spec";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { withLearningDefaults, type CatchSpec, type GameSpec, type RaceSpec } from "@/lib/games/spec";
 import { PALETTES } from "@/lib/games/themes";
 import { catchScene } from "./catch-scene";
 import { MemoryGame } from "./memory-game";
@@ -28,7 +28,7 @@ function Engine(props: EngineProps) {
 }
 
 export function GamePlayer({
-  spec,
+  spec: rawSpec,
   banner,
   autoStart = false,
   toolbar,
@@ -39,6 +39,8 @@ export function GamePlayer({
   autoStart?: boolean;
   toolbar?: ReactNode;
 }) {
+  // Games saved before learning fields existed still play.
+  const spec = useMemo(() => withLearningDefaults(rawSpec), [rawSpec]);
   const [hud, setHud] = useState<Hud>({ ...START_HUD, lives: spec.lives, status: autoStart ? "playing" : "ready" });
   const [paused, setPaused] = useState(false);
   const [runId, setRunId] = useState(0);
@@ -146,6 +148,11 @@ export function GamePlayer({
               {spec.hero}
             </div>
             <h2 className="hand text-4xl">{spec.title}</h2>
+            {spec.learningGoal && (
+              <p className="rounded-lg border-2 border-line bg-sun px-3 py-1 text-sm font-semibold">
+                🎓 {spec.learningGoal}
+              </p>
+            )}
             <ul className="text-sm text-muted">
               {spec.howToPlay.map((line) => (
                 <li key={line}>{line}</li>
@@ -182,6 +189,16 @@ export function GamePlayer({
             <h2 className="hand text-4xl">{hud.status === "won" ? "You did it!" : "Game over"}</h2>
             <p className="text-muted">{hud.message}</p>
             <p className="hand text-2xl">⭐ {hud.score} points</p>
+            {spec.facts.length > 0 && (
+              <div className="w-full rounded-xl border-2 border-line bg-card px-4 py-2 text-left text-sm">
+                <p className="hand text-lg">💡 Did you know?</p>
+                <ul className="list-disc space-y-0.5 pl-5">
+                  {spec.facts.slice(0, 3).map((fact) => (
+                    <li key={fact}>{fact}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <button onClick={start} className="btn btn-primary !px-6 !text-xl" autoFocus>
               ↻ Play again
             </button>

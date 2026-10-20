@@ -3,9 +3,10 @@ import type { CatchSpec } from "@/lib/games/spec";
 import { PALETTES } from "@/lib/games/themes";
 import { HEIGHT, WIDTH, type SceneFactory } from "./phaser-host";
 
-type Item = { obj: PhaserNS.GameObjects.Text; vy: number; kind: "good" | "bad" | "bonus" };
+type Item = { obj: PhaserNS.GameObjects.Text; label: string; vy: number; kind: "good" | "bad" | "bonus" };
 
 const DIFFICULTY_MULT = { easy: 0.8, medium: 1, hard: 1.25 };
+const isEmojiOnly = (s: string) => /^\p{Extended_Pictographic}/u.test(s) && s.length <= 8;
 
 export const catchScene: SceneFactory<CatchSpec> = (Phaser, { spec, onHud, sfx, controls }) => {
   const palette = PALETTES[spec.theme];
@@ -13,6 +14,7 @@ export const catchScene: SceneFactory<CatchSpec> = (Phaser, { spec, onHud, sfx, 
 
   return class CatchScene extends Phaser.Scene {
     hero!: PhaserNS.GameObjects.Text;
+    ruleText!: PhaserNS.GameObjects.Text;
     keys!: PhaserNS.Types.Input.Keyboard.CursorKeys;
     items: Item[] = [];
     score = 0;
@@ -39,6 +41,19 @@ export const catchScene: SceneFactory<CatchSpec> = (Phaser, { spec, onHud, sfx, 
       this.add.rectangle(WIDTH / 2, HEIGHT - 12, WIDTH, 24, Phaser.Display.Color.HexStringToColor(palette.ground).color);
 
       this.hero = this.add.text(WIDTH / 2, HEIGHT - 60, spec.hero, { fontSize: "56px" }).setOrigin(0.5);
+      // The learning rule stays on screen: it's what the player is sorting by.
+      this.ruleText = this.add
+        .text(WIDTH / 2, 14, `🎯 ${spec.rule}`, {
+          fontSize: "22px",
+          fontStyle: "bold",
+          color: "#1f2937",
+          backgroundColor: "#ffffffe6",
+          padding: { x: 12, y: 6 },
+          align: "center",
+          wordWrap: { width: WIDTH - 60 },
+        })
+        .setOrigin(0.5, 0)
+        .setDepth(10);
       this.keys = this.input.keyboard!.createCursorKeys();
       this.input.on("pointermove", (p: PhaserNS.Input.Pointer) => {
         if (p.isDown || p.wasTouch) this.pointerX = p.x;
@@ -72,10 +87,15 @@ export const catchScene: SceneFactory<CatchSpec> = (Phaser, { spec, onHud, sfx, 
     spawn() {
       const roll = Math.random();
       const kind: Item["kind"] = spec.bonus && roll < 0.06 ? "bonus" : roll < 0.72 ? "good" : "bad";
-      const emoji = kind === "bonus" ? "🌟" : kind === "good" ? pick(spec.goodItems) : pick(spec.badItems);
-      const obj = this.add.text(30 + Math.random() * (WIDTH - 60), -30, emoji, { fontSize: "40px" }).setOrigin(0.5);
+      const label = kind === "bonus" ? "🌟" : kind === "good" ? pick(spec.goodItems) : pick(spec.badItems);
+      // Words and numbers get a card so they're readable against any theme.
+      const style = isEmojiOnly(label)
+        ? { fontSize: "40px" }
+        : { fontSize: "26px", fontStyle: "bold", color: "#1f2937", backgroundColor: "#ffffff", padding: { x: 10, y: 4 } };
+      const obj = this.add.text(0, -30, label, style).setOrigin(0.5);
+      obj.x = obj.width / 2 + 10 + Math.random() * (WIDTH - obj.width - 20);
       const vy = (90 + spec.fallSpeed * 22) * this.speedMult() * (0.8 + Math.random() * 0.4);
-      this.items.push({ obj, vy, kind });
+      this.items.push({ obj, label, vy, kind });
     }
 
     update(time: number, delta: number) {
@@ -103,7 +123,7 @@ export const catchScene: SceneFactory<CatchSpec> = (Phaser, { spec, onHud, sfx, 
 
       for (const item of [...this.items]) {
         item.obj.y += item.vy * dt;
-        const hit = Math.abs(item.obj.x - this.hero.x) < 42 && Math.abs(item.obj.y - this.hero.y) < 40;
+        const hit = Math.abs(item.obj.x - this.hero.x) < Math.max(42, item.obj.width / 2 + 24) && Math.abs(item.obj.y - this.hero.y) < 40;
         if (hit) {
           this.remove(item);
           this.collect(item, time);
@@ -128,6 +148,9 @@ export const catchScene: SceneFactory<CatchSpec> = (Phaser, { spec, onHud, sfx, 
       if (item.kind === "bad") {
         if (time < this.hurtUntil) return;
         sfx("bad");
+        this.floatText(this.hero.x, this.hero.y - 70, `✗ ${item.label}`, "#ef4444");
+        this.ruleText.setBackgroundColor("#fecaca");
+        this.time.delayedCall(600, () => this.ruleText.setBackgroundColor("#ffffffe6"));
         this.cameras.main.shake(150, 0.01);
         this.hurtUntil = time + 1000;
         if (spec.lives > 0) {

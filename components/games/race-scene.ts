@@ -4,10 +4,19 @@ import { PALETTES } from "@/lib/games/themes";
 import { HEIGHT, WIDTH, type SceneFactory } from "./phaser-host";
 
 type Thing = { obj: PhaserNS.GameObjects.Text; lane: number; d: number; kind: "obstacle" | "pickup" | "bonus" };
+type Gate = {
+  d: number;
+  question: string;
+  answer: string;
+  correctLane: number;
+  labels: { obj: PhaserNS.GameObjects.Text; lane: number }[];
+  announced: boolean;
+};
 type Rival = { obj: PhaserNS.GameObjects.Text; label: PhaserNS.GameObjects.Text; lane: number; x: number; d: number; pace: number; nextTurn: number };
 
 const DIFFICULTY_MULT = { easy: 0.8, medium: 1, hard: 1.2 };
 const PLACE_POINTS = [300, 200, 120, 80, 50, 30];
+const LABEL_TOP = 92; // answer labels wait here (under the question) until the gate scrolls in
 const ordinal = (n: number) => `${n}${n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"}`;
 
 export const raceScene: SceneFactory<RaceSpec> = (Phaser, { spec, onHud, sfx, controls }) => {
@@ -29,6 +38,8 @@ export const raceScene: SceneFactory<RaceSpec> = (Phaser, { spec, onHud, sfx, co
     finishLine!: PhaserNS.GameObjects.Text;
     things: Thing[] = [];
     rivals: Rival[] = [];
+    gates: Gate[] = [];
+    questionText!: PhaserNS.GameObjects.Text;
     lane = Math.floor(spec.lanes / 2);
     dist = 0;
     nextSpawnAt = 400;
@@ -75,6 +86,20 @@ export const raceScene: SceneFactory<RaceSpec> = (Phaser, { spec, onHud, sfx, co
         .setOrigin(0.5)
         .setVisible(false);
 
+      this.questionText = this.add
+        .text(WIDTH / 2, 12, "", {
+          fontSize: "22px",
+          fontStyle: "bold",
+          color: "#1f2937",
+          backgroundColor: "#ffffffee",
+          padding: { x: 12, y: 6 },
+          align: "center",
+          wordWrap: { width: WIDTH - 60 },
+        })
+        .setOrigin(0.5, 0)
+        .setDepth(10)
+        .setVisible(false);
+
       this.hero = this.add.text(laneX(this.lane), PLAYER_Y, spec.hero, { fontSize: "52px" }).setOrigin(0.5).setDepth(5);
       this.keys = this.input.keyboard!.createCursorKeys();
       this.input.on("pointerdown", (p: PhaserNS.Input.Pointer) => this.steer(p.x < this.hero.x ? -1 : 1));
@@ -111,6 +136,7 @@ export const raceScene: SceneFactory<RaceSpec> = (Phaser, { spec, onHud, sfx, co
         return { obj, label, lane, x: laneX(lane), d: 60 + i * 70, pace: 0.86 + Math.random() * 0.2, nextTurn: 1500 + Math.random() * 2000 };
       });
       this.finishLine.setVisible(false);
+      this.setupGates();
       onHud({
         score: this.score,
         lives: this.lives,
@@ -118,6 +144,86 @@ export const raceScene: SceneFactory<RaceSpec> = (Phaser, { spec, onHud, sfx, co
         timeLeft: spec.timerSeconds || null,
         status: "playing",
         message: undefined,
+      });
+    }
+
+    /** Spread this level's questions evenly along the track as answer gates. */
+    setupGates() {
+      this.gates.forEach((g) => g.labels.forEach((l) => l.obj.destroy()));
+      this.gates = [];
+      this.questionText.setVisible(false);
+      const qs = spec.questions;
+      if (!qs.length) return;
+      const perLevel = Math.max(1, Math.ceil(qs.length / spec.levels));
+      const levelQs = Array.from({ length: perLevel }, (_, i) => qs[((this.level - 1) * perLevel + i) % qs.length]);
+      this.gates = levelQs.map((q, i) => {
+        const lanes = Phaser.Utils.Array.Shuffle([...Array(spec.lanes).keys()]);
+        const labels = Array.from({ length: spec.lanes }, (_, lane) => {
+          const choice = lanes.indexOf(lane);
+          const text = choice < q.choices.length ? q.choices[choice] : "✖";
+          const obj = this.add
+            .text(laneX(lane), -100, text, {
+              fontSize: "18px",
+              fontStyle: "bold",
+              color: "#1f2937",
+              backgroundColor: "#fde68a",
+              padding: { x: 6, y: 4 },
+              align: "center",
+              wordWrap: { width: laneW - 10 },
+            })
+            .setOrigin(0.5)
+            .setDepth(6)
+            .setVisible(false);
+          return { obj, lane };
+        });
+        return {
+          d: (this.finishDist() * (i + 1)) / (levelQs.length + 1),
+          question: q.question,
+          answer: q.choices[q.answer],
+          correctLane: lanes[q.answer],
+          labels,
+          announced: false,
+        };
+      });
+    }
+
+    /** Distance before a gate when its question appears: about 5 seconds of driving. */
+    gateLead() {
+      return this.baseSpeed() * 5;
+    }
+
+    updateGates(time: number) {
+      for (const g of [...this.gates]) {
+        const ahead = g.d - this.dist;
+        if (!g.announced && ahead < this.gateLead()) {
+          g.announced = true;
+          sfx("click");
+          this.questionText.setText(`❓ ${g.question}`).setVisible(true);
+          g.labels.forEach((l) => l.obj.setVisible(true));
+        }
+        if (!g.announced) continue;
+        const y = Math.max(LABEL_TOP, PLAYER_Y - ahead);
+        g.labels.forEach((l) => l.obj.setY(y));
+        if (ahead <= 0) this.passGate(g, time);
+      }
+    }
+
+    passGate(g: Gate, time: number) {
+      g.labels.forEach((l) => l.obj.destroy());
+      this.gates.splice(this.gates.indexOf(g), 1);
+      const right = this.lane === g.correctLane;
+      if (right) {
+        sfx("good");
+        this.score += 50;
+        this.boostUntil = time + 1500;
+        onHud({ score: this.score });
+      } else {
+        sfx("bad");
+        this.slowUntil = time + 1000;
+      }
+      this.questionText.setText(right ? "✅ Correct! +50" : `💡 The answer is ${g.answer}`);
+      this.time.delayedCall(1800, () => {
+        if (!this.gates.some((x) => x.announced)) this.questionText.setVisible(false);
       });
     }
 
@@ -170,10 +276,15 @@ export const raceScene: SceneFactory<RaceSpec> = (Phaser, { spec, onHud, sfx, co
         if (d.y > HEIGHT + 20) d.y -= HEIGHT + 40;
       }
 
+      // Keep the road clear around answer gates so the player can focus on the question.
+      const gateNear = this.gates.some((g) => g.d - this.dist < this.gateLead() + 300);
+      if (gateNear) this.nextSpawnAt = Math.max(this.nextSpawnAt, this.dist + 200);
       if (this.dist >= this.nextSpawnAt) {
         this.spawn();
         this.nextSpawnAt = this.dist + (560 - spec.obstacleDensity * 38) * (0.8 + Math.random() * 0.5);
       }
+
+      this.updateGates(time);
 
       for (const t of [...this.things]) {
         t.obj.y = PLAYER_Y - (t.d - this.dist);

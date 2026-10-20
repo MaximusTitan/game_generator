@@ -6,9 +6,9 @@ const nunito = Nunito({ variable: "--font-nunito", subsets: ["latin"] });
 const hand = Patrick_Hand({ variable: "--font-hand", weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Game Gen: make a game by describing it",
+  title: "Game Gen: make learning games by describing them",
   description:
-    "Type an idea and Game Gen builds a playable quiz, race, catcher or memory game. No coding needed.",
+    "Pick a subject and Game Gen builds an educational quiz, answer race, sorting or memory game. No coding needed.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

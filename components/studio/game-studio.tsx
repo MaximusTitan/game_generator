@@ -158,6 +158,11 @@ export function GameStudio({ params }: { params: Promise<{ id: string }> }) {
         <aside className="flex flex-col gap-3 lg:pt-12">
           <div className="sketch !bg-sun p-4">
             <h2 className="hand text-2xl">{spec.title}</h2>
+            {spec.learningGoal && (
+              <p className="mt-1 text-sm text-muted">
+                🎓 <span className="font-semibold">{spec.subject}:</span> {spec.learningGoal}
+              </p>
+            )}
             <p className="hand mt-2 text-lg">How to play</p>
             <ul className="mt-1 space-y-1 text-sm">
               {spec.howToPlay.map((line) => (

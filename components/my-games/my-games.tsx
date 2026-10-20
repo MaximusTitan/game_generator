@@ -86,7 +86,8 @@ export function MyGames() {
                   <div className="min-w-0 px-0.5">
                     <p className="hand truncate text-xl leading-tight">{game.title}</p>
                     <p className="text-xs text-muted">
-                      {GAME_TYPE_INFO[game.type].label} {!game.is_public && "· 🔒 private"}
+                      {GAME_TYPE_INFO[game.type].label} {game.spec.subject && `· 🎓 ${game.spec.subject}`}{" "}
+                      {!game.is_public && "· 🔒 private"}
                     </p>
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">
