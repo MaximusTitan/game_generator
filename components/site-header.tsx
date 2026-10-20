@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -33,8 +34,8 @@ export function SiteHeader() {
   return (
     <header className="border-b-2 border-line bg-card">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-        <Link href="/" className="hand text-2xl text-brand flex items-center gap-2">
-          <span aria-hidden>🎮</span> Game Gen
+        <Link href="/" className="flex shrink-0 items-center" aria-label="GameGen home">
+          <Image src="/logo.png" alt="GameGen" width={1277} height={238} preload className="h-7 w-auto sm:h-8" />
         </Link>
         <nav className="flex items-center gap-2 sm:gap-4 text-sm">
           {user ? (

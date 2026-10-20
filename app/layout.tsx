@@ -6,7 +6,7 @@ const nunito = Nunito({ variable: "--font-nunito", subsets: ["latin"] });
 const hand = Patrick_Hand({ variable: "--font-hand", weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Game Gen: make learning games by describing them",
+  title: "GameGen: make learning games by describing them",
   description:
     "Pick a subject and Game Gen builds an educational quiz, answer race, sorting or memory game. No coding needed.",
 };
