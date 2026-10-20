@@ -27,12 +27,21 @@ Editing with chat sends the current spec plus the request to `/api/edit`, which 
    - `AI_GATEWAY_API_KEY`, and optionally `AI_GATEWAY_MODEL` (defaults to `anthropic/claude-sonnet-5.5`)
 4. `pnpm install` then `pnpm dev`.
 
-### Sign up without email verification
+### Email verification
 
-`/api/auth/signup` creates users with the Supabase admin API and `email_confirm: true`, so accounts are verified straight away and the browser signs in immediately. No confirmation email is sent, whatever the "Confirm email" setting in Supabase is.
+Sign up uses Supabase's built-in email confirmation. New users see a "check your email" screen (with a resend button) and can't log in until they click the link, which lands on `/auth/confirm`, signs them in and sends them where they were going.
+
+In the Supabase dashboard:
+
+1. **Authentication → Sign In / Providers → Email**: keep **Confirm email** on. (If it's off, sign up skips verification and signs in straight away.)
+2. **Authentication → URL Configuration**: set **Site URL** to your app's URL and add `http://localhost:3000/**` (plus your production URL with `/**`) to **Redirect URLs**.
+3. **Authentication → Emails → Confirm signup** (recommended): change the link's `href` to
+   `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`.
+   The default template's link uses a PKCE code, which only works when opened in the same browser that signed up; the `token_hash` link works anywhere (users land on the home page).
+4. Supabase's built-in mailer is rate limited (a few emails per hour). For real use, set up custom SMTP under **Authentication → Emails → SMTP Settings**.
 
 ## Routes
 
 - `/` prompt screen · `/create` customize and generate · `/games/[id]` play and edit with chat (owner only)
 - `/play/[id]` public player for shared games (anyone with the link) · `/my-games` your games, share link, QR, remix
-- `/login`, `/signup`
+- `/login`, `/signup` · `/auth/confirm` email verification callback
