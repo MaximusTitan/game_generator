@@ -181,7 +181,7 @@ export function GameStudio({ params }: { params: Promise<{ id: string }> }) {
       ) : (
         <aside className="sketch flex max-h-[80vh] flex-col overflow-hidden lg:sticky lg:top-6">
           <div className="flex items-center justify-between border-b-2 border-line px-4 py-3">
-            <h2 className="hand text-2xl">Chat with Genie 🧞</h2>
+            <h2 className="hand text-2xl">Chat with Game Gen 🎮</h2>
             <button className="text-sm text-muted hover:text-brand" onClick={() => setMode("play")}>
               Close ✕
             </button>

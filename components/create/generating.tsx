@@ -30,7 +30,7 @@ export function Generating({ done }: { done: boolean }) {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-6 px-4 py-12 text-center">
       <div className="bob text-7xl" aria-hidden>
-        🧞
+        🎮
       </div>
       <div>
         <h1 className="hand text-4xl">{done ? "Your game is ready!" : "Building your game…"}</h1>

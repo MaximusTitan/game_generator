@@ -1,4 +1,4 @@
--- Game Genie schema. Run in the Supabase SQL editor (or `supabase db push`).
+-- Game Gen schema. Run in the Supabase SQL editor (or `supabase db push`).
 
 create table if not exists public.games (
   id           uuid primary key default gen_random_uuid(),

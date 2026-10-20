@@ -14,7 +14,7 @@ import {
 // Any AI Gateway model id works here; requests are routed and billed by the gateway.
 const MODEL = process.env.AI_GATEWAY_MODEL ?? "anthropic/claude-sonnet-5.5";
 
-const DESIGNER = `You are Game Genie, a friendly game designer for kids and teachers.
+const DESIGNER = `You are Game Gen, a friendly game designer for kids and teachers.
 You turn a short idea into a complete, playable game by filling in a JSON game spec.
 The spec is rendered by a fixed game engine, so you never write code: you only choose content and settings.
 

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { CustomizeGame } from "@/components/create/customize-game";
 
-export const metadata = { title: "Make it yours · Game Genie" };
+export const metadata = { title: "Make it yours · Game Gen" };
 
 export default function CreatePage() {
   return (

@@ -96,7 +96,7 @@ export function PromptForm() {
       </div>
 
       <div>
-        <p className="hand mb-2 text-lg">Game type <span className="text-sm text-muted">(or let the genie pick)</span></p>
+        <p className="hand mb-2 text-lg">Game type <span className="text-sm text-muted">(or let Game Gen pick)</span></p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {GAME_TYPES.map((t) => (
             <button

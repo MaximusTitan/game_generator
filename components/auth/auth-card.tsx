@@ -17,7 +17,7 @@ export function AuthCard({
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
           <div className="bob mb-2 text-6xl" aria-hidden>
-            🧞
+            🎮
           </div>
           <h1 className="hand text-4xl">{title}</h1>
           <p className="mt-1 text-muted">{subtitle}</p>

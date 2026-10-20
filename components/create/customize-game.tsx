@@ -65,7 +65,7 @@ export function CustomizeGame() {
   if (!prompt) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 p-10 text-center">
-        <p className="hand text-2xl">First, tell the genie your game idea!</p>
+        <p className="hand text-2xl">First, tell Game Gen your game idea!</p>
         <Link href="/" className="btn btn-primary">
           ← Describe a game
         </Link>
@@ -94,7 +94,7 @@ export function CustomizeGame() {
 
         <Section title="Game type">
           <Chip pressed={options.type === null} onClick={() => set("type", null)}>
-            🪄 Genie picks
+            🎲 Auto pick
           </Chip>
           {GAME_TYPES.map((t) => (
             <Chip key={t} pressed={options.type === t} onClick={() => set("type", t)}>
@@ -129,7 +129,7 @@ export function CustomizeGame() {
             onClick={() => set("hero", "")}
             className="chip !rounded-full !px-3 text-sm"
           >
-            🪄 Genie picks
+            🎲 Auto pick
           </button>
           {HEROES.map((h) => (
             <button
@@ -208,7 +208,7 @@ export function CustomizeGame() {
           </div>
           <ul className="mt-3 space-y-0.5 text-sm text-muted">
             <li>
-              {options.type ? `${GAME_TYPE_INFO[options.type].icon} ${GAME_TYPE_INFO[options.type].label}` : "🪄 Genie picks the game type"}
+              {options.type ? `${GAME_TYPE_INFO[options.type].icon} ${GAME_TYPE_INFO[options.type].label}` : "🎲 Game Gen picks the game type"}
             </li>
             <li>
               {options.theme === "surprise" ? "🎁 Surprise theme" : `${PALETTES[options.theme].icon} ${PALETTES[options.theme].label}`} ·{" "}

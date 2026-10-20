@@ -1,6 +1,6 @@
-# Game Genie
+# Game Gen
 
-Type an idea ("a jungle race with three cars") and Game Genie builds a playable game: a **quiz**, a **race**, a **catcher** or a **memory match**. Players can then tweak it by chatting ("make it faster"), save it, and share it with a link or QR code.
+Type an idea ("a jungle race with three cars") and Game Gen builds a playable game: a **quiz**, a **race**, a **catcher** or a **memory match**. Players can then tweak it by chatting ("make it faster"), save it, and share it with a link or QR code.
 
 Built with Next.js 16, React 19, Tailwind CSS 4, Phaser 4, Supabase (auth + Postgres) and the Vercel AI Gateway (via the AI SDK).
 

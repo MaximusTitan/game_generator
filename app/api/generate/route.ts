@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("generate failed", err);
     return NextResponse.json(
-      { error: "The genie got confused making that game. Please try again!" },
+      { error: "Game Gen got confused making that game. Please try again!" },
       { status: 502 },
     );
   }

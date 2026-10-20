@@ -39,7 +39,7 @@ export function SharedGame({ params }: { params: Promise<{ id: string }> }) {
       <header className="border-b-2 border-line bg-card">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
           <Link href="/" className="hand flex items-center gap-2 text-2xl text-brand">
-            <span aria-hidden>🧞</span> Game Genie
+            <span aria-hidden>🎮</span> Game Gen
           </Link>
           <Link href="/" className="btn btn-sun !py-1 !text-base">
             ✨ Make your own
@@ -68,7 +68,7 @@ export function SharedGame({ params }: { params: Promise<{ id: string }> }) {
               }
             />
             <p className="mt-3 text-center text-sm text-muted">
-              Made with Game Genie from the idea: <span className="hand text-base text-ink">“{game.prompt}”</span>
+              Made with Game Gen from the idea: <span className="hand text-base text-ink">“{game.prompt}”</span>
             </p>
           </>
         )}
